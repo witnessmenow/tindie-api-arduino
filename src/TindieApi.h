@@ -33,11 +33,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 struct OrderInfo
 {
     int number_of_products;
+    long number;
     char *shipping_country;
     char *date;
     bool shipped;
-    double total_seller;
-    double total_subtotal;
+    float total_seller;
+    float total_subtotal;
     bool error;
 };
 
@@ -46,16 +47,14 @@ struct ProductInfo
     char *model_number;
     char *options;
     //bool pre_order;
-    double price_total;
-    double price_unit;
+    float price_total;
+    float price_unit;
     char *product;
     int quantity;
     char *sku;
     //char *status;
     bool error;
 };
-
-typedef bool (*FingerPrintMatches)();
 
 class TindieApi
 {
@@ -64,9 +63,8 @@ class TindieApi
     bool makeGetRequest(char *command);
     int getOrderCount(int shipped = -1); //-1 is ignore, 0 is false, 1 is true
     int getOrderCount(bool shipped);
-
+    OrderInfo getOrderInfo(int offset = -1, int shipped = -1);
     int portNumber = 443;
-    //bool _checkFingerPrint = true; //Fail request if fingerprint doesnt match
     bool _debug = false;
     Client *client;
 

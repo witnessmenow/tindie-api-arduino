@@ -37,15 +37,6 @@ bool TindieApi::makeGetRequest(char *command)
         return false;
     }
 
-    //Serial.println(F("Connected!"));
-
-    // Default client doesnt have a verify, need to figure something else out.
-    // if (_checkFingerPrint && !client->verify(TINDIE_FINGERPRINT, TINDIE_HOST))
-    // {
-    //     Serial.println(F("certificate doesn't match"));
-    //     return false;
-    // }
-
     // give the esp a breather
     yield();
 
@@ -146,6 +137,75 @@ int TindieApi::getOrderCount(bool shipped)
     {
         return getOrderCount(0);
     }
+}
+
+OrderInfo TindieApi::getOrderInfo(int offset, int shipped)
+{
+    char command[200] = TINDIE_ORDER_END_POINT;
+    strcat(command, "&username=");
+    strcat(command, _userName);
+    strcat(command, "&api_key=");
+    strcat(command, _apiKey);
+    strcat(command, "&shipped=");
+    if (shipped > -1)
+    {
+        strcat(command, "&shipped=");
+        if (shipped == 0)
+        {
+            strcat(command, "false");
+        }
+        else
+        {
+            strcat(command, "true");
+        }
+    }
+    if (offset > -1)
+    {
+        strcat(command, "&offset=");
+        char str[20] = {0};
+        std::sprintf(str, "%d", offset);
+        strcat(command, str);
+    }
+
+    if (_debug)
+    {
+        Serial.println(command);
+    }
+
+    // Get from https://arduinojson.org/v5/assistant/
+    const size_t bufferSize = JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(5) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(5) + 2 * JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(30) + 500;
+    OrderInfo orderInfo;
+    // This flag will get cleared if all goes well
+    orderInfo.error = true;
+    if (makeGetRequest(command))
+    {
+        // Allocate JsonBuffer
+        DynamicJsonBuffer jsonBuffer(bufferSize);
+
+        // Parse JSON object
+        JsonObject &root = jsonBuffer.parseObject(*client);
+        if (root.success())
+        {
+            JsonObject &order = root["orders"][0];
+            orderInfo.shipping_country = (char *)order["shipping_country"].as<char *>();
+            orderInfo.date = (char *)order["date"].as<char *>();
+            orderInfo.number = order["number"].as<long>();
+            orderInfo.shipped = order["shipped"].as<bool>();
+            orderInfo.total_seller = order["total_seller"].as<float>();
+            orderInfo.total_subtotal = order["total_subtotal"].as<float>();
+
+            JsonArray &items = order["items"];
+            orderInfo.number_of_products = items.size();
+
+            orderInfo.error = false;
+        }
+        else
+        {
+            Serial.println(F("Parsing failed!"));
+        }
+    }
+    closeClient();
+    return orderInfo;
 }
 
 void TindieApi::closeClient()

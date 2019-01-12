@@ -67,35 +67,41 @@ void loop()
         Serial.print("Free Heap: ");
         Serial.println(ESP.getFreeHeap());
 
-        Serial.print("Getting number of Tindie Orders for:");
+        Serial.print("Getting info on last Tindie Order for:");
         Serial.println(TINDIE_USER);
-        int totalTindieOrders = tindie.getOrderCount();
-        delay(100);
-        int unshippedTindieOrders = tindie.getOrderCount(false);
+        OrderInfo orderInfo = tindie.getOrderInfo();
 
-        Serial.println("------------------");
+        // getOrderInfo() has two optional params
+        // offset (int) - how far offset from the most recent order e.g. 1 would give the second most recent order
+        // shipped (int) - 1 for shipped only, 0 for unshipped only. -1 for both (default)
 
-        Serial.print("Total Orders: ");
-        if (totalTindieOrders >= 0)
+        if (!orderInfo.error)
         {
-            Serial.println(totalTindieOrders);
-        }
-        else
-        {
-            Serial.println("error");
-        }
+            Serial.println("---------Order Info ---------");
 
-        Serial.print("Un-shipped Orders: ");
-        if (unshippedTindieOrders >= 0)
-        {
-            Serial.println(unshippedTindieOrders);
-        }
-        else
-        {
-            Serial.println("error");
-        }
+            Serial.print("Number: ");
+            Serial.println(orderInfo.number);
 
-        Serial.println("------------------------");
+            Serial.print("Country: ");
+            Serial.println(orderInfo.shipping_country);
+
+            Serial.print("Date: ");
+            Serial.println(orderInfo.date);
+
+            Serial.print("Number of different products bought: ");
+            Serial.println(orderInfo.number_of_products);
+
+            Serial.print("Shipped: ");
+            orderInfo.shipped ? Serial.println("true") : Serial.println("false");
+
+            Serial.print("Total Price paid: ");
+            Serial.println(orderInfo.total_subtotal);
+
+            Serial.print("Total Price to seller: ");
+            Serial.println(orderInfo.total_seller);
+
+            Serial.println("------------------------");
+        }
 
         requestDueTime = millis() + delayBetweenRequests;
     }
