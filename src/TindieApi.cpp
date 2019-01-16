@@ -75,6 +75,8 @@ bool TindieApi::makeGetRequest(char *command)
         return false;
     }
 
+    // Was getting stray characters between the headers and the body
+    // This should toss them away
     while (client->available() && client->peek() != '{')
     {
         char c = 0;
