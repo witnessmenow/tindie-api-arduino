@@ -1,24 +1,39 @@
 /*******************************************************************
- *  Get Total Tindie Orders + unshipped order numbers
- *
- *  By Brian Lough
- *  https://www.youtube.com/brianlough
+    Get Total Tindie Orders + unshipped order numbers
+ 
+    By Brian Lough
+    YouTube: https://www.youtube.com/brianlough
+    Tindie: https://www.twitch.tv/brianlough
+    Twitter: https://twitter.com/witnessmenow
  *******************************************************************/
 
 #include <TindieApi.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 
-// Currently needs to be V5.X.X (not V6)
-#include <ArduinoJson.h> // This Sketch doesn't technically need this, but the library does so it must be installed.
+#include <ArduinoJson.h>
+// Library used for parsing Json from the API responses
+// NOTE: There is a breaking change in the 6.x.x version,
+// install the 5.x.x version instead
+// Search for "Arduino Json" in the Arduino Library manager
+// https://github.com/bblanchon/ArduinoJson
 
 //------- Replace the following! ------
+
 char ssid[] = "SSID";         // your network SSID (name)
-char password[] = "password"; // your network key
+char password[] = "password"; // your network password
 
 #define TINDIE_API_KEY "1234567890654rfscFfsdfdsffd"
+// API Key can be retrieved from here
+// https://www.tindie.com/profiles/update/
+//
+// NOTE: Please be very careful with this API key as people will be
+// able to retrieve customer information (address, phone numbers, emails etc)
+// if they get access to it
 
 #define TINDIE_USER "brianlough"
+
+//------- ---------------------- ------
 
 WiFiClientSecure client;
 TindieApi tindie(client, TINDIE_USER, TINDIE_API_KEY);
@@ -53,6 +68,7 @@ void setup()
     Serial.println(ip);
 
     // Only avaible in ESP8266 V2.5 RC1 and above
+    // I would consider this very important for this library
     client.setFingerprint(TINDIE_FINGERPRINT);
 
     // If you want to enable some extra debugging

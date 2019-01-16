@@ -29,8 +29,8 @@ TindieApi::TindieApi(Client &client, char *userName, char *apiKey)
 
 bool TindieApi::makeGetRequest(char *command)
 {
-
-    client->setTimeout(5000);
+    client->flush();
+    client->setTimeout(TINDIE_TIMEOUT);
     if (!client->connect(TINDIE_HOST, portNumber))
     {
         Serial.println(F("Connection failed"));
@@ -75,6 +75,17 @@ bool TindieApi::makeGetRequest(char *command)
         return false;
     }
 
+    while (client->available() && client->peek() != '{')
+    {
+        char c = 0;
+        client->readBytes(&c, 1);
+        if (_debug)
+        {
+            Serial.print("Tossing an unexpected character: ");
+            Serial.println(c);
+        }
+    }
+
     // Let the caller of this method parse the JSon from the client
     return true;
 }
@@ -104,7 +115,7 @@ int TindieApi::getOrderCount(int shipped)
     }
 
     // Use arduinojson.org/assistant to compute the capacity.
-    const size_t bufferSize = JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(5) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(5) + 2 * JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(30) + 500;
+    const size_t bufferSize = JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(2) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(5) + 5 * JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(30) + 500;
     int orderCount = -1;
     if (makeGetRequest(command))
     {
@@ -146,7 +157,6 @@ OrderInfo TindieApi::getOrderInfo(int offset, int shipped)
     strcat(command, _userName);
     strcat(command, "&api_key=");
     strcat(command, _apiKey);
-    strcat(command, "&shipped=");
     if (shipped > -1)
     {
         strcat(command, "&shipped=");
@@ -161,9 +171,8 @@ OrderInfo TindieApi::getOrderInfo(int offset, int shipped)
     }
     if (offset > -1)
     {
-        strcat(command, "&offset=");
-        char str[20] = {0};
-        std::sprintf(str, "%d", offset);
+        char str[25] = {0};
+        std::sprintf(str, "&offset=%d", offset);
         strcat(command, str);
     }
 
@@ -173,7 +182,7 @@ OrderInfo TindieApi::getOrderInfo(int offset, int shipped)
     }
 
     // Get from https://arduinojson.org/v5/assistant/
-    const size_t bufferSize = JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(5) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(5) + 2 * JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(30) + 500;
+    const size_t bufferSize = JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(2) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(5) + 5 * JSON_OBJECT_SIZE(9) + JSON_OBJECT_SIZE(30);
     OrderInfo orderInfo;
     // This flag will get cleared if all goes well
     orderInfo.error = true;
@@ -196,6 +205,18 @@ OrderInfo TindieApi::getOrderInfo(int offset, int shipped)
 
             JsonArray &items = order["items"];
             orderInfo.number_of_products = items.size();
+            int maxCount = (orderInfo.number_of_products < TINDIE_MAX_PRODUCTS_IN_ORDER) ? orderInfo.number_of_products : TINDIE_MAX_PRODUCTS_IN_ORDER;
+            for (int i = 0; i < orderInfo.number_of_products; i++)
+            {
+                orderInfo.products[i].model_number = (char *)order["items"][i]["model_number"].as<char *>();
+                orderInfo.products[i].options = (char *)order["items"][i]["options"].as<char *>();
+                orderInfo.products[i].price_total = order["items"][i]["price_total"].as<float>();
+                orderInfo.products[i].price_unit = order["items"][i]["price_unit"].as<float>();
+                orderInfo.products[i].product = (char *)order["items"][i]["product"].as<char *>();
+                orderInfo.products[i].quantity = order["items"][i]["quantity"].as<int>();
+                orderInfo.products[i].sku = (char *)order["items"][i]["sku"].as<char *>();
+                orderInfo.products[i].error = false;
+            }
 
             orderInfo.error = false;
         }

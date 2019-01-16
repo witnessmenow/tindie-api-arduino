@@ -26,21 +26,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #define TINDIE_HOST "www.tindie.com"
 // Fingerprint correct as of Jan 9th 2019
 #define TINDIE_FINGERPRINT "BC 73 A5 9C 6E EE 38 43 A6 37 FC 32 CF 08 16 DC CF F1 5A 66"
-#define TINDIE_TIMEOUT 1500
+#define TINDIE_TIMEOUT 20000
 
 #define TINDIE_ORDER_END_POINT "/api/v1/order/?format=json&limit=1"
 
-struct OrderInfo
-{
-    int number_of_products;
-    long number;
-    char *shipping_country;
-    char *date;
-    bool shipped;
-    float total_seller;
-    float total_subtotal;
-    bool error;
-};
+#define TINDIE_ORDER_URL_FORMAT "https://www.tindie.com/orders/%ld/"
+
+#define TINDIE_MAX_PRODUCTS_IN_ORDER 5
 
 struct ProductInfo
 {
@@ -53,6 +45,19 @@ struct ProductInfo
     int quantity;
     char *sku;
     //char *status;
+    bool error;
+};
+
+struct OrderInfo
+{
+    int number_of_products;
+    long number;
+    char *shipping_country;
+    char *date;
+    bool shipped;
+    float total_seller;
+    float total_subtotal;
+    ProductInfo products[TINDIE_MAX_PRODUCTS_IN_ORDER];
     bool error;
 };
 
